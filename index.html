@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>this is a test</title>
+
+	</head>
+	<body>
+
+		<video id="inputVideo" width="400" height="300"  preload autoplay loop muted playsinline webkit-playsinline='true'>
+		</video>
+		<canvas id="drawCanvas" width="400" height="300"></canvas>
+		<style>/*video和canvas标签位置重合使显示出来的人脸模型和视频重合*/
+        #webcam, #overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+    </style>
+
+		<!-- 导入相关的js文件 -->
+		<script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+		<script src="js/tracking.js" type="text/javascript" charset="utf-8"></script>
+		<script src="js/utils.js" type="text/javascript" charset="utf-8"></script>
+		<script src="./js/clmtrackr.js"></script>
+		<script type="text/javascript">
+			// 1、在html页面中引用clmtrackr.js和utils.js；
+			// 2、定义video标签、canvas标签和图片容器（#imgArray）；
+			// 、3、利用navigator.mediaDevices.getUserMedia调用电脑的摄像头；
+			navigator.mediaDevices
+			  .getUserMedia({video:{
+			    // 优先使用前置摄像头
+			    // facingMode: 'user',
+			    // 强制使用后置摄像头
+			    facingMode: { exact: "environment" },
+			    // 设置1280*720的摄像头分辨率，ideal是理想值有着更高的权重
+			    // width: { min: 1024, ideal: 1280, max: 1920 },
+			    // height: { min: 776, ideal: 720, max: 1080 },
+			    // frameRate: { ideal: 10, max: 15 }
+			  },audio: true})
+			  .then(getMediaStreamSuccess)
+			  .catch(getMediaStreamError)
+			// 4、实例化clmtrackr的全局对象和初始化clmtrackr并调用clmtrackr的跟踪器；
+			// 初始化tracking参数
+			var tracker = new tracking.ObjectTracker(['face', 'eye', 'mouth']);
+			var videoInput = document.getElementById('inputVideo');
+			tracker.setInitialScale(4);
+			tracker.setStepSize(2);
+			tracker.setEdgesDensity(0.1);
+			tracker.on("track", event => {
+			  Tracked(event);
+			});
+			// tracking启用摄像头,这里我选择调用原生的摄像头
+			tracking.track(videoInput, tracker, { camera: true });
+			
+			// 如果是读取视频，可以用trackerTask.stop trackerTask.run来暂停、开始视频
+			var trackerTask = tracking.track(videoInput, tracker);
+			// 5、定义生成图片的方法getPhoto；
+			function getPhoto(){
+			  this.isdetected = ''
+			  this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+			  let video = document.getElementById('video')
+			  this.context.drawImage(video, 0,0, this.canvas.width, this.canvas.height)
+			  let dataUrl = this.canvas.toDataURL('image/jpeg', 1);
+			  this.imgbase64 = dataUrl.replace(/^data:image\/\w+;base64,/, "");
+			  // 开始人脸识别
+			  this.postFace()
+			
+			}
+			// 6、监听clmtrackr的实例中的getCurrentPosition方法，当出现人脸时调用拍照方法（getPhoto）。
+			
+			// 7、将抓拍到的图片添加到图片容器（imgArray）中。
+			
+			
+			// 
+			function Tracked(event){
+				console.log(event.data)
+				positionLoop();			
+				drawLoop();
+			}
+			
+			
+			
+			// 摄像头调用成功
+			function getMediaStreamSuccess(stream){
+				alert('视频流启动')
+				// alert(JSON.stringify(stream))
+				// var ctrack = new clm.tracker();
+				// ctrack.init();
+				// var videoInput = document.getElementById('inputVideo');
+				// $('#inputVideo').attr('src',stream)
+				// window.stream = stream
+				// ctracker.start(videoInput);
+			}
+			// 摄像头调用失败
+			function getMediaStreamError(){
+				
+			}
+			// var videoInput = document.getElementById('inputVideo');
+			// var ctracker = new clm.tracker();
+			// ctracker.init();
+			// ctracker.start(videoInput);
+
+			// 采集点
+			function positionLoop() {
+				requestAnimationFrame(positionLoop);
+				var positions = ctracker.getCurrentPosition();
+				// positions = [[x_0, y_0], [x_1,y_1], ... ]
+				// do something with the positions ...
+			}
+			// 绘画
+			var canvasInput = document.getElementById('drawCanvas');
+			var cc = canvasInput.getContext('2d');
+
+			function drawLoop() {
+				requestAnimationFrame(drawLoop);
+				cc.clearRect(0, 0, canvasInput.width, canvasInput.height);
+				ctracker.draw(canvasInput);
+			}
+		</script>
+
+	</body>
+</html>
